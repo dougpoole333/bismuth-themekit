@@ -281,8 +281,9 @@
 .grid-break-product {
   @media only screen and (max-width: 950px){
     grid-template-columns: 1fr;
-  }
+  } 
 }
-.site-header__logo-link{
-  color: pink !important;
-}
+
+// .site-header__logo-link{
+//   color: pink !important;
+// }

@@ -10,11 +10,14 @@ const webpackStream = require('webpack-stream');
 var liquid = require("gulp-liquidjs");
 const filePath = require('path');
 var browserSync = require('browser-sync').create();
+require('isomorphic-fetch')
 
 function getProps(cb) {
   var doc = yaml.safeLoad(fs.readFileSync('./config.yml', 'utf8'));
   return doc
 }
+
+const props = getProps()
 
 function returnJSWebpackConfig(path){
   return {
@@ -37,7 +40,6 @@ function bundleTemplateJS(path){
 }
 
 function browserSyncInit(){
- let props = getProps()
  browserSync.init({
     proxy: {
       target: `https://${props.development.store}?preview_theme_id=${props.development.theme_id}`
@@ -52,12 +54,38 @@ function browserSyncInit(){
     },
   });
   watch(['./theme_reload']).on('all', function(){
-    setTimeout(browserSync.reload, 1000)
+    browserSync.reload()
   })
 }
 
 async function bundleAll(cb) {
     browserSyncInit()
+    //watches assets and uploads to shopify
+    watch(['./assets/*.*']).on('all', async function(event, path){
+      await fs.readFile("./" + path,'utf8', async function(err,data){
+        const asset_url = `https://${props.development.store}/admin/api/2019-10/themes/${props.development.theme_id}/assets.json`
+        const body = JSON.stringify({asset: {key: path, value: data}})
+        const assets = await fetch(asset_url, {
+            method: 'PUT',
+            headers: {
+              "X-Shopify-Access-Token": props.development.password,
+              'Content-Type': 'application/json',
+            },
+            body: body
+          })
+          .then(response => response.json())
+          .then(json => {
+            const filename = 'file.txt';
+            const time = new Date();
+
+            try {
+              fs.utimesSync("./theme_reload", time, time);
+            } catch (err) {
+              fs.closeSync(fs.openSync("./theme_reload", 'w'));
+            }
+          });
+      })
+    })
     //watches template files
     watch(['./scripts/templates/*.js'], { ignoreInitial: false }).on('all', function(event, path){
       console.log(path)

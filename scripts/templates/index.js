@@ -1,2 +1,2 @@
 console.log('index.js')
-console.log("TESTING 1234")
+console.log("SHOOT SHOT SHOOT")
